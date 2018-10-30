@@ -1,11 +1,8 @@
 # example script for parametric sweep
-# evaluates optimisation run for similar input parameters, varying n_seg
-
-
+# evaluates optimisation run for similar input parameters, varying power and time of flight
 
 from merlot.interplanetary import merlot_sep_e2pl
 import pygmo as pg
-from matplotlib import pyplot as plt
 from pykep.examples import add_gradient
 import pygmo_plugins_nonfree as ppn
 import merlot.physical_data as pd
@@ -14,64 +11,86 @@ import merlot.launcher_data as lv
 from merlot.orbit import spiral_in, spiral_out
 import pykep as pk
 import numpy as np
+from merlot.worhp_setup import worhp_setup
+import examples.data_store_writer as dsw
 
 import time
 
-# 0 - set-up
-
-# computation start time
-start = time.time()
-
-# initial run number
-ID = 1
+# 1 - set-up
 
 # USER INPUTS
-planet = pd.Mars
-_power = 9000
+
+# number of leg segments
+# _n_seg = 10
+# target planet
+_planet = pd.Mars
+# departure year
+_year = [2020,2022,2024]
+# EP thruster
+_engine = td.RIT_A
+# number of active EP thrusters
+_no_engine = 1
+# power at 1 AU
+_power = 15000
+# time of flight (heliocentric)
 _tof = 450
-_n_seg = 10
-engine = td.BPT4000
-no_engine = 1
-LV = lv.F9
+# launch vehicle
+_LV = lv.F9
+# target altitude at target (km)
 target_alt = 320
 
-# 1 - Algorithm
+# create new file to store run data
+dsw.outbound_datafile_make(_planet.name, _year, _engine.name,_no_engine,_LV.shortname)
+
+# initial run number
+# (can be set to continue data run)
+ID = 1
+
+# 2 - Algorithm
 
 # WORHP as user-defined algorithm
-uda = ppn.worhp(screen_output=True,library=r'C:\Users\andrew mcsweeney\Documents\Project_Orbiter_Tool\worhp.dll')
+uda = ppn.worhp(screen_output=False,
+                library=r'C:\Users\andrew mcsweeney\Documents\Project_Orbiter_Tool\worhp.dll')
 
-# WORHP setup
-uda.set_numeric_option('TolFeas', 1e-3)
-uda.set_numeric_option('AcceptTolFeas',1e-4)
-uda.set_numeric_option('AcceptTolOpti',1e-4)
-uda.set_integer_option('MaxIter', 500)
+# add WORHP user settings
+worhp_setup(uda)
+
+# algorithm definition
+algo = pg.algorithm(uda)
 
 for _n_seg in np.arange(3,101,1):
 
+    # computation start time
+    end = time.time()
+    start = time.time()
+
+
+
     try:
-        # algorithm definition
-        algo = pg.algorithm(uda)
 
-        # 2 - Problem
+        # 3 - Optimisation problem definition
 
-        udp = add_gradient(merlot_sep_e2pl(planet,
+        # user defined problem (taken from inputs)
+        udp = add_gradient(merlot_sep_e2pl(target=_planet,
                                            n_seg=int(_n_seg),
-                                           year=2026,
+                                           year=_year,
                                            tof=int(_tof),
                                            Psa=int(_power),
-                                           engine=engine,
-                                           no_engine=no_engine,
-                                           LV=LV,
+                                           engine=_engine,
+                                           no_engine=_no_engine,
+                                           LV=_LV,
                                            vinf_arr=1e-5,
                                            sep=True),
                            with_grad=False)
 
         prob = pg.problem(udp)
 
+        # tolerance for examining solution feasibility
         prob.c_tol = [1e-5] * prob.get_nc()
 
-        # 3 - Population
-        pop = pg.population(prob, 1, 200)
+        # 3 - Population definition
+        # set SEED = int for manually configuring the initial guess
+        pop = pg.population(prob, 1, 2412496532)
         print(pop.get_seed())
 
         # 4 - Solve the problem (evolve)
@@ -79,17 +98,19 @@ for _n_seg in np.arange(3,101,1):
 
         # 5 - Inspect the solution
         print("Feasible?:", prob.feasibility_x(pop.champion_x))
+
+        # continue with orbit spiralling and data writing if solution is feasible
         if prob.feasibility_x(pop.champion_x):
 
             # 6 - Spiraling to target orbit
 
-            spirals = spiral_in(pl=planet,
+            spirals = spiral_in(pl=_planet,
                                 orbit_alt=target_alt,
                                 Psa=int(_power),
                                 i_init=0,
                                 i_fin=0,
-                                engine=engine,
-                                no_engine=no_engine,
+                                engine=_engine,
+                                no_engine=_no_engine,
                                 epoch=pop.champion_x[0] + int(_tof),
                                 mi=pop.champion_x[1])
 
@@ -103,22 +124,6 @@ for _n_seg in np.arange(3,101,1):
 
             # 7 - Write data to csv file
             udp.udp_inner.data_reporting(x=pop.champion_x, runtime=(end - start), sp_data=spiral_data, ID=ID)
-
-        #
-        # # 8 - plot trajectory
-        # axis = udp.udp_inner.plot_traj(pop.champion_x, plot_segments=True)
-        # plt.title("The trajectory in the heliocentric frame")
-        #
-        # # 9 - plot control
-        # udp.udp_inner.plot_dists_thrust(pop.champion_x)
-        #
-        # # 10 - pretty
-        # udp.udp_inner.pretty(pop.champion_x)
-        #
-        # # 11 - pretty - f
-        # udp.udp_inner.pretty_f(pop.champion_f)
-        #
-        # plt.show()
 
 
     except:

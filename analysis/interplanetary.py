@@ -9,6 +9,7 @@
 # TODO ==== make plots 2D
 # TODO ==== include asteroids as targets
 # TODO ==== include planet data in writer
+# TODO ==== include option to optimise other variables e.g minimise trip time, minimise initial mass
 
 import pykep as pk
 import numpy as np
@@ -17,6 +18,7 @@ import csv
 import merlot.thruster_data as td
 import merlot.launcher_data as lv
 import merlot.physical_data as pd
+
 
 class merlot_sep_e2pl:
     """""
@@ -88,6 +90,7 @@ class merlot_sep_e2pl:
         self.__n_seg = n_seg
 
         # departure date range
+        self.year = year
         t_0 = pk.epoch((float(year - 2001) * 365.25) + 366)
         t_f = pk.epoch((float((year + 1) - 2001) * 365.25) + 365.9999)
         date_range = [t_0, t_f]
@@ -100,24 +103,6 @@ class merlot_sep_e2pl:
         # self.C3_max = max(LV.C3)
         # (below)test to check extended C3 ranges
         self.C3_max = 50
-        # TODO ==== update and delete string lv references
-        # # launcher parameter selection
-        # if self.LV == 'SOYUZ':
-        #     self.C3_max = 25.0
-        # elif self.LV == 'PROTON':
-        #     self.C3_max = 36.0
-        # elif self.LV == 'FALCON9':
-        #     self.C3_max = 45.0
-        # elif self.LV == 'A64':
-        #     self.C3_max = 35.0
-        # elif self.LV == 'H-IIA(202)':
-        #     self.C3_max = 40.0
-        # elif self.LV == 'DELTA_IV(H)':
-        #     self.C3_max = 100.0
-        # elif self.LV == 'ATLAS_V(551)':
-        #     self.C3_max = 60.0
-        # elif self.LV == 'ATLAS_V(401)':
-        #     self.C3_max = 45.0
 
         # propulsion subsystem
         self.engine = engine
@@ -161,11 +146,13 @@ class merlot_sep_e2pl:
         self.vinf_arr = vinf_arr * 1000  # (in m/s)
 
         # lower and upper bounds
-        lb = [date_range[0].mjd2000] + [self.__sc.mass * 0.2] + [-self.vinf_dep] * 3 + [-self.vinf_arr] * 3 \
+        lb = [date_range[0].mjd2000] + [self.__sc.mass * 0.1] + [-self.vinf_dep] * 3 + [-self.vinf_arr] * 3 \
              + [-1, -1, -1] * n_seg
         ub = [date_range[1].mjd2000] + [self.__sc.mass] + [self.vinf_dep] * 3 + [self.vinf_arr] * 3 + [1, 1, 1] * n_seg
         self.__lb = lb
         self.__ub = ub
+        print(lb)
+        print(ub)
 
 
     # Fitness function
@@ -285,12 +272,11 @@ class merlot_sep_e2pl:
         # Thruster power limits
         if Pin > P_max:
             Pin = P_max
-        if Pin < P_min:
-            Pin = 0
+        # if Pin < P_min:
+        #     Pin = 0
 
         # thrust coefficients
         Thr_coeffs = self.engine.T_c
-
         # isp coefficients
         Isp_coeffs = self.engine.Isp_c
 
@@ -367,10 +353,11 @@ class merlot_sep_e2pl:
                               ** 2 + rfwd[i][2] ** 2) / pk.AU
                 max_thrust, isp = self._sep_model(r)
                 veff = isp * pk.G0
+
             ufwd[i] = [max_thrust * thr for thr in t]
             rfwd[i + 1], vfwd[i + 1], mfwd[i + 1] = pk.propagate_taylor(
                 rfwd[i], vfwd[i], mfwd[i], ufwd[i], fwd_dt[i], pk.MU_SUN, veff, -10, -10)
-
+                # TODO ==== put back to -10?
         # 4 - Backward propagation
         bwd_grid = t0 + T * self.__bwd_grid  # days
         bwd_dt = T * self.__bwd_dt  # seconds
@@ -767,7 +754,24 @@ class merlot_sep_e2pl:
             dist_sun[-i -
                      2] = np.linalg.norm([xbwd[-i - 2], ybwd[-i - 2], zbwd[-i - 2]])
 
-        with open('merlot_outbound_data.csv', 'a+', newline='') as csvfile:
+
+        # find correct file to write to
+
+        # file name sequence
+        s = "-"
+        name = ('outbound', str(self.target_name), str(self.year), str(self.engine.name), str(self.no_engine),
+                str(self.LV.shortname))
+        filename = s.join(name) + '.csv'
+
+        # path to data store location
+        z = '\\'
+        path = r"C:\Users\andrew mcsweeney\Documents\projects\merlot\run_data"
+        file = (path, filename)
+        path = z.join(file)
+
+        # write to file
+
+        with open(path, 'a+', newline='') as csvfile:
             writer = csv.writer(csvfile, delimiter=',')
             writer.writerow(  # RUN DATA
                 [ID, str(now), n_seg, runtime,
@@ -855,7 +859,7 @@ class merlot_sep_pl2e:
         # 2) Class data members
 
         # planets
-        self.target_name = target
+        self.target_name = target.name
         self.target = pk.planet.jpl_lp(self.target_name)
         self.earth = pk.planet.jpl_lp('earth')
 
@@ -863,6 +867,7 @@ class merlot_sep_pl2e:
         self.__n_seg = n_seg
 
         # departure date range
+        self.year = year
         t_0 = pk.epoch((float(year - 2001) * 365.25) + 366)
         t_f = pk.epoch((float((year + 1) - 2001) * 365.25) + 365.9999)
         date_range = [t_0, t_f]
@@ -1056,7 +1061,7 @@ class merlot_sep_pl2e:
         # TODO ==== check if this is appropriate means to modle multiple engines firing
         Tmax *= self.no_engine
 
-        if Tmax < 0:
+        if Tmax <= 0:
             Tmax = 0
 
         # Isp (s)
@@ -1474,7 +1479,7 @@ class merlot_sep_pl2e:
     def pretty_f(self, f):
         print("=====Tolerance Check=====")
         print("=====mismatch constraints=====")
-        print("mf (kg): ", -f[0])
+        print("mf (kg): ", f[0])
         print("x mismatch (m): ", f[1] * pk.AU)
         print("x mismatch: ", f[1])
         print("y mismatch (m): ", f[2] * pk.AU)
@@ -1488,7 +1493,7 @@ class merlot_sep_pl2e:
         print("vz mismatch (m/s): ", f[6] * pk.EARTH_VELOCITY)
         print("vz mismatch: ", f[6])
         # TODO ==== make equal value set in constraints in fitness
-        print("mass mismatch (kg): ", f[7] * (x[1]+self.return_mass))
+        print("mass mismatch (kg): ", f[7] * (f[0]+self.return_mass))
         # print("mass mismatch (kg): ", f[7] * self.mass_dim)
         print("mass mismatch: ", f[7])
         # print("====total====")
@@ -1555,7 +1560,23 @@ class merlot_sep_pl2e:
                      2] = np.linalg.norm([xbwd[-i - 2], ybwd[-i - 2], zbwd[-i - 2]])
 
 
-        with open('merlot_return_data.csv', 'a+',newline='') as csvfile:
+
+        # find correct file to write to
+
+        # file name sequence
+        s = "-"
+        name = ('return', str(self.target_name), str(self.year), str(self.engine.name), str(self.no_engine))
+        filename = s.join(name) + '.csv'
+
+        # path to data store location
+        z = '\\'
+        path = r"C:\Users\andrew mcsweeney\Documents\projects\merlot\run_data"
+        file = (path, filename)
+        path = z.join(file)
+
+        # write to file
+
+        with open(path, 'a+', newline='') as csvfile:
             writer = csv.writer(csvfile, delimiter=',')
             writer.writerow(  # RUN DATA
                             [ID, str(now), n_seg, runtime,

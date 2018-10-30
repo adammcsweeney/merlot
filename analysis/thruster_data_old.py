@@ -1,3 +1,7 @@
+
+
+
+
 # Module contains classes including EP thruster data
 # Note: data currently based o estimates from publically available sources (see comments for source data)
 # Note: linear relationships currently assumed between power and thrust/isp
@@ -44,6 +48,13 @@ class BPT4000():
 # # isp coefficients
 # Isp_coeffs = np.polyfit(engine.power, engine.isp, engine.poly)
 # print(Isp_coeffs)
+
+
+
+
+
+
+
 
 
 
