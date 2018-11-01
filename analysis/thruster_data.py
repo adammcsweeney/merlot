@@ -170,12 +170,16 @@ class T6:
 class HT20k():
     # source data:
     # http://epic-src.eu/wp-content/uploads/24_EPICWorkshop2017_SITAEL_EPIC_WS_1b.pdf
+
+    # data
     name = 'HT20K'
     power = [10000, 20000]
     thrust = [0.3, 1.1]
     isp = [2000, 3800]
     throughput = 'unknown'
     eff = [.7, .7]
+
+    # modelling parameters
     poly = 2
     T_c = [8.e-05, -5.e-01]
     Isp_c = [1.8e-01, 2.0e+02]
@@ -185,7 +189,7 @@ class HT20k():
 
 class XIPS:
     # source data
-    #
+    # https://arc.aiaa.org/doi/abs/10.2514/6.2008-4914
 
     # data
     name = "XIPS"
@@ -202,7 +206,7 @@ class XIPS:
 
 class NSTAR:
     # source data
-    # http://arc.aiaa.org | DOI: 10.2514/1.B34173
+    # https://ieeexplore.ieee.org/document/878371
 
     # data
     name = "NSTAR"
@@ -249,7 +253,7 @@ class BPT4000:
 
 class NEXT_HighThrust:
     # source data
-    #
+    # https://arc.aiaa.org/doi/abs/10.2514/6.2008-4914
 
     # data (estimated from source)
     name = "NEXT (high-thrust)"
@@ -267,7 +271,7 @@ class NEXT_HighThrust:
 
 class NEXT_HighIsp:
     # source data
-    #
+    # https://arc.aiaa.org/doi/abs/10.2514/6.2008-4914
 
     # data (estimated from source)
     name = "NEXT (high-isp)"
