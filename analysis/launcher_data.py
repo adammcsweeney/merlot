@@ -1,6 +1,9 @@
 # Module contains classes with launch vehicle data (data collected from publicly available sources)
 # Note: C3 v performance relationship considered linear for extrapolated data points beyond stated in source data
 
+# TODO ==== add launcher data from Robic Biesbroek - Lunar and Interplanetary Trajectories
+# TODO ==== compare data with existing in file, update for launchers
+
 import numpy as np
 import matplotlib.pyplot as plt
 
