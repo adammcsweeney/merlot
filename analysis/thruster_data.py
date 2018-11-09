@@ -5,7 +5,7 @@
 # TODO ==== figure out why higher power engines do not work
 # TODO ==== check acceptability of polyfit solutions (i.e. variation in isp from source data)
 # TODO ==== experiment, set power input profile also to power cubed (i.e. as in MARGO, and not JPL model)
-
+# TODO ==== find better means to model thruster performance curves i.e. better curve fit
 
 import numpy as np
 import matplotlib.pyplot as plt
@@ -35,6 +35,26 @@ class T6:
     Isp_c =[8.79420628e-10, -9.61874290e-05, 8.32028893e-01, 2.24352822e+03]
 
 
+class PPS20k:
+    # source data
+    # http://erps.spacegrant.org/uploads/images/images/iepc_articledownload_1988-2007/2011index/IEPC-2011-020.pdf
+
+    # data
+    name = "PPS-20k "
+    power = [2600, 5000, 10000, 15000, 20000, 23500]
+    thrust = [0.075, 0.290, 0.575, 0.775, 1.000, 1.050]
+    isp = []
+    eff = []
+    throughput = "unknown"
+    eff = []
+
+    # modelling parameters
+    poly = 3
+    T_c = []
+    Isp_c =[]
+
+
+
 class HT20k:
     # source data:
     # http://epic-src.eu/wp-content/uploads/24_EPICWorkshop2017_SITAEL_EPIC_WS_1b.pdf
@@ -54,6 +74,23 @@ class HT20k:
 
 
 # AMERICAN THRUSTERS
+
+class SPT140:
+    # source data
+    # https://ntrs.nasa.gov/archive/nasa/casi.ntrs.nasa.gov/20180005324.pdf
+
+    # data
+    name = 'SPT-140'
+    power = [910, 930, 930, 1520, 2020, 2530, 3050, 3580, 4570]
+    thrust = [0.058, 0.057, 0.057, 0.100, 0.132, 0.158, 0.189, 0.222, 0.279]
+    isp = [1283, 1364, 1400, 1545, 1627, 1662, 1710, 1739, 1794]
+    throughput = 'unknown'
+    eff = [0.40, 0.41, 0.42, 0.5, 0.52, 0.51, 0.52, 0.53, 0.54]
+
+    # modelling parameters
+    poly = 3
+    T_c = [1.21983756e-12, -1.13681407e-08, 9.16229636e-05, -1.83038189e-02]
+    Isp_c = [1.95347603e-08, -1.97375550e-04, 6.99658164e-01, 8.57026147e+02]
 
 
 class XIPS:
@@ -150,9 +187,39 @@ class NEXT_HighIsp:
     T_c = [-9.51248864e-14, 1.52765068e-09, 2.45492623e-05, 1.16399821e-02]
     Isp_c = [3.31864848e-08, -5.29086442e-04, 2.68081192e+00, -9.66900768e+01]
 
-plot_compare_thrust([NSTAR,T6,BPT4000, XIPS, NEXT_HighIsp, NEXT_HighThrust])
-plot_compare_isp([NSTAR,T6,BPT4000, XIPS, NEXT_HighIsp, NEXT_HighThrust])
+class HiPEP:
+    # source data
+    # https://arc.aiaa.org/doi/abs/10.2514/6.2008-4914
 
+    # data (estimated from source)
+    name = "HiPEP (High Power Electric Propulsion Ion Thruster)"
+    power = [9700, 15900, 20200, 24400, 29600, 34600, 39300]
+    thrust = [0.240, 0.340, 0.410, 0.460, 0.540, 0.600, 0.670]
+    isp = [5970, 7020, 7500, 8270, 8900, 9150, 9620]
+    eff = [0.72, 0.74, 0.75, 0.76, 0.80, 0.77, 0.80]
+    throughput = "unknown"
+
+    # modelling paramters
+    poly = 3
+    T_c = []
+    Isp_c = []
+
+class TM50:
+    # source data
+    # https://ntrs.nasa.gov/archive/nasa/casi.ntrs.nasa.gov/20000021551.pdf
+
+    # data (estimated from source)
+    name = "TM-50"
+    power = [6666, 7182, 8366, 9456, 10577, 10461, 11568, 12741, 13814, 15092, 16100, 17147]
+    thrust = [0.403, 0.424, 0.462, 0.495, 0.528, 0.528, 0.557, 0.583, 0.603, 0.627, 0.623, 0.662]
+    isp = [1912, 2014, 2193, 2349, 2505, 2505, 2641, 2769, 2862, 2975, 2955, 3139]
+    eff = [0.57, 0.58, 0.59, 0.60, 0.61, 0.62, 0.62, 0.62, 0.61, 0.61, 0.56, 0.59]
+    throughput = "unknown"
+
+    # modelling paramters
+    poly = 3
+    T_c = []
+    Isp_c = []
 
 # EVALUATING THRUSTER PERFORMANCE
 
@@ -285,7 +352,15 @@ def plot_compare_isp(thrusters):
     plt.show()
 
 
+for thruster in [HT20k, SPT140, T6, BPT4000, NEXT_HighIsp, NSTAR, HiPEP, TM50]:
+    plt.plot(thruster.power, thruster.isp)
 
+plt.show()
+
+for thruster in [HT20k, SPT140, T6, BPT4000, NEXT_HighIsp, NSTAR, HiPEP, TM50]:
+    plt.plot(thruster.power, thruster.thrust)
+
+plt.show()
 
 
 

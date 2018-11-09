@@ -3,6 +3,7 @@
 
 # TODO ==== add launcher data from Robic Biesbroek - Lunar and Interplanetary Trajectories
 # TODO ==== compare data with existing in file, update for launchers
+# TODO ==== produce better model than linear extrapolation for modelling performance curve at higher isp
 
 import numpy as np
 import matplotlib.pyplot as plt
@@ -10,6 +11,13 @@ import matplotlib.pyplot as plt
 # Launch Vehicle Data
 
 # Data: Europe
+
+class VEGA():
+    # data source "Lunar and Interplanetary Trajectories - Robin Biesbroek"
+    name = "Vega - ArianeSpace"
+    C3 = []
+    performance = []
+    params = []
 
 class SOYUZ():
     # data source: http://www.arianespace.com/wp-content/uploads/2015/09/Soyuz-Users-Manual-March-2012.pdf
