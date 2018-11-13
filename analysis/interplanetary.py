@@ -10,6 +10,7 @@
 # TODO ==== include asteroids as targets
 # TODO ==== include planet data in writer
 # TODO ==== include option to optimise other variables e.g minimise trip time, minimise initial mass
+# TODO ==== implement duty cycle modelling (e.g. to account for outages/contingencies)
 
 import pykep as pk
 import numpy as np
